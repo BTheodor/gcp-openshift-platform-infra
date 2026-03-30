@@ -3,7 +3,7 @@
 A production-grade hybrid cloud platform engineering repository showcasing the infrastructure, automation, and observability stack built for a B2B SaaS client serving enterprise accounts across EMEA and North America.
 
 ## Overview
-This platform was designed and operated as a Lead Platform Engineer to support a high-scale environment processing 40M+ daily events. The architecture combines the agility of **GCP GKE Autopilot** with the robustness of on-premise **OpenShift** clusters, providing a secure, compliant, and highly available foundation for mission-critical microservices.
+This platform was designed and operated as Lead Platform Engineer to support a high-scale environment processing 40M+ daily events. The architecture combines the agility of **GCP GKE Autopilot** with the robustness of on-premise **OpenShift** clusters, providing a secure, compliant, and highly available foundation for mission-critical microservices.
 
 ### Business Impact
 | Metric | Before | After | Improvement |
