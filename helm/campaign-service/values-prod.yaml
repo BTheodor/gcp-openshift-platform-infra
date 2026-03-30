@@ -1,0 +1,43 @@
+replicaCount: 10
+
+image:
+  repository: gcr.io/client-project/campaign-service
+  pullPolicy: IfNotPresent
+  tag: "1.2.4"
+
+springProfile: "prod"
+
+kafka:
+  bootstrapServers: "kafka-cluster-kafka-bootstrap.kafka.svc:9092"
+  consumerGroup: "campaign-processor-group"
+
+resources:
+  limits:
+    cpu: 2000m
+    memory: 6Gi
+  requests:
+    cpu: 1000m
+    memory: 4Gi
+
+autoscaling:
+  enabled: true
+  minReplicas: 6
+  maxReplicas: 25
+  targetCPUUtilizationPercentage: 70
+  targetKafkaLag: 5000
+
+nodeSelector:
+  iam.gke.io/gke-metadata-server-enabled: "true"
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - campaign-service
+          topologyKey: kubernetes.io/hostname

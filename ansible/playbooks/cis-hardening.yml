@@ -1,0 +1,70 @@
+---
+- name: Apply CIS Level 2 Hardening
+  hosts: all
+  become: yes
+  tasks:
+    - name: Ensure auditd is installed
+      package:
+        name: auditd
+        state: present
+
+    - name: Configure auditd rules for security events
+      copy:
+        dest: /etc/audit/rules.d/audit.rules
+        content: |
+          -D
+          -b 8192
+          -f 1
+          --backlog_wait_time 60000
+          -w /etc/shadow -p wa -k identity
+          -w /etc/passwd -p wa -k identity
+          -w /etc/group -p wa -k identity
+          -w /etc/sudoers -p wa -k priv_mgmt
+        mode: '0600'
+      notify: restart auditd
+
+    - name: Apply sysctl kernel hardening
+      sysctl:
+        name: "{{ item.key }}"
+        value: "{{ item.value }}"
+        state: present
+        reload: yes
+      loop:
+        - { key: 'net.ipv4.conf.all.accept_redirects', value: '0' }
+        - { key: 'net.ipv4.conf.all.send_redirects', value: '0' }
+        - { key: 'net.ipv4.conf.all.accept_source_route', value: '0' }
+        - { key: 'net.ipv4.ip_forward', value: '0' }
+        - { key: 'net.ipv6.conf.all.disable_ipv6', value: '1' }
+        - { key: 'kernel.randomize_va_space', value: '2' }
+
+    - name: Harden sshd_config
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        state: present
+      loop:
+        - { regexp: '^PermitRootLogin', line: 'PermitRootLogin no' }
+        - { regexp: '^PasswordAuthentication', line: 'PasswordAuthentication no' }
+        - { regexp: '^MaxAuthTries', line: 'MaxAuthTries 4' }
+        - { regexp: '^X11Forwarding', line: 'X11Forwarding no' }
+      notify: restart sshd
+
+    - name: Remove SUID/SGID from dangerous binaries
+      file:
+        path: "{{ item }}"
+        mode: '0755'
+      loop:
+        - /usr/bin/newgrp
+        - /usr/bin/chsh
+        - /usr/bin/chfn
+
+  handlers:
+    - name: restart auditd
+      service:
+        name: auditd
+        state: restarted
+    - name: restart sshd
+      service:
+        name: sshd
+        state: restarted

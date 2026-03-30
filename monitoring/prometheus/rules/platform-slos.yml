@@ -1,0 +1,46 @@
+groups:
+  - name: platform-slos
+    rules:
+      # Recording Rules
+      - record: job:http_request_duration_seconds_p99:rate5m
+        expr: histogram_quantile(0.99, sum by (le, job) (rate(http_request_duration_seconds_bucket[5m])))
+
+      - record: job:http_requests_error_rate:rate5m
+        expr: sum by (job) (rate(http_requests_total{status=~"5.."}[5m])) / sum by (job) (rate(http_requests_total[5m]))
+
+      # Alerting Rules
+      - alert: HighErrorRate
+        expr: job:http_requests_error_rate:rate5m > 0.01
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate on {{ $labels.job }}"
+          description: "Error rate is above 1% for more than 2 minutes."
+
+      - alert: KafkaConsumerLagCritical
+        expr: sum by (group, topic) (kafka_consumergroup_lag) > 50000
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical Kafka lag for group {{ $labels.group }}"
+          description: "Total lag for group {{ $labels.group }} on topic {{ $labels.topic }} is over 50,000 messages."
+
+      - alert: OracleConnectionPoolExhausted
+        expr: oracle_pool_active_connections / oracle_pool_max_connections > 0.9
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Oracle connection pool near exhaustion"
+          description: "Database connection pool utilization is at {{ $value | humanizePercentage }}."
+
+      - alert: HadoopYARNQueueSaturation
+        expr: yarn_queue_root_default_allocated_vcores / yarn_queue_root_default_total_vcores > 0.95
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "YARN queue saturation"
+          description: "Hadoop YARN default queue is at 95% vCore capacity."
